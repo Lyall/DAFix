@@ -40,46 +40,37 @@ jobs:
         
     - name: Create Directory Structure
       run: |
-        mkdir .\zip\ea\bin_ship
-        mkdir .\zip\gog\bin_ship
+        mkdir .\zip\bin_ship
 
-    - name: Prepare GOG Files
+    - name: Prepare Files
       run: |
-        cp ${{ github.event.repository.name }}.asi .\zip\gog\bin_ship\
-        cp ${{ github.event.repository.name }}.ini .\zip\gog\bin_ship\
-        cp dinput8.dll .\zip\gog\bin_ship\dinput8.dll
-        cp UltimateASILoader_LICENSE.md .\zip\gog\
-        New-Item -Path ".\zip\gog\EXTRACT_TO_GAME_FOLDER" -ItemType File
-    
-    - name: Create GOG Zip
-      run: |
-        cd .\zip\gog\
-        7z a -r -tzip ..\..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip .\*
+        cp ${{ github.event.repository.name }}.asi .\zip\bin_ship\
+        cp ${{ github.event.repository.name }}.ini .\zip\bin_ship\
+        cp dinput8.dll .\zip\bin_ship\dinput8.dll
 
-    - name: Prepare EA Files
-      run: |
-        cp ${{ github.event.repository.name }}.asi .\zip\ea\bin_ship\
-        cp ${{ github.event.repository.name }}.ini .\zip\ea\bin_ship\
-        cp dinput8.dll .\zip\ea\bin_ship\winhttp.dll
-        cp UltimateASILoader_LICENSE.md .\zip\ea\
-        New-Item -Path ".\zip\ea\EXTRACT_TO_GAME_FOLDER" -ItemType File
+        $asi_ini = @"
+        [GlobalSets]
+        DontLoadFromDllMain=0
+        "@
+        Set-Content -Path .\zip\bin_ship\dinput8.ini -Value $asi_ini -Encoding UTF8
+        
+        cp UltimateASILoader_LICENSE.md .\zip\
+        New-Item -Path ".\zip\EXTRACT_TO_GAME_FOLDER" -ItemType File
     
-    - name: Create EA Zip
+    - name: Create Zip
       run: |
-        cd .\zip\ea\
-        7z a -r -tzip ..\..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip .\*
+        cd .\zip\
+        7z a -r -tzip ..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip .\*
 
     - name: Update release_body.md
       run: |
         $releaseBody = "release_body.md"
         $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
         (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
-        $EAZipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip" 
-        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME_EA>', $EAZipName | Set-Content $releaseBody
         
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip, ${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip"
+        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.event.inputs.version }}
         name: "${{ github.event.inputs.version }}"
