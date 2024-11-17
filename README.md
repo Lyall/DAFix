@@ -1,4 +1,4 @@
-# Dragon Age: Origins Fix
+# Dragon Age 1/2 Fix
 
 ## Credits
 [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) for ASI loading. <br />
