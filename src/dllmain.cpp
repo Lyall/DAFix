@@ -38,6 +38,7 @@ float fHUDHeight;
 float fHUDHeightOffset;
 
 // Ini variables
+bool bBorderlessWindowed;
 bool bDisablePillarboxing = true;
 bool bFixAspect = true;
 float fHUDScale = 0.00f;
@@ -137,6 +138,7 @@ void Configuration()
     spdlog::info("----------");
 
     // Load settings from ini
+    inipp::get_value(ini.sections["Borderless Windowed"], "Enabled", bBorderlessWindowed);
     inipp::get_value(ini.sections["Fix Aspect Ratio"], "Enabled", bFixAspect);
     inipp::get_value(ini.sections["Disable Pillarboxing"], "Enabled", bDisablePillarboxing);
     inipp::get_value(ini.sections["HUD Scale"], "Scale", fHUDScale);
@@ -146,6 +148,7 @@ void Configuration()
     inipp::get_value(ini.sections["Shadow Resolution"], "Resolution", iShadowResolution);
 
     // Log ini parse
+    spdlog_confparse(bBorderlessWindowed);
     spdlog_confparse(bFixAspect);
     spdlog_confparse(bDisablePillarboxing);
     spdlog_confparse(fHUDScale);
@@ -252,6 +255,38 @@ void CurrentResolution()
         }
         else {
             spdlog::error("DA1/DA2: Current Resolution: Pattern scan failed.");
+        }
+    }
+}
+
+void WindowManagement()
+{
+    if (eGameType == Game::DA1 && bBorderlessWindowed) {
+        // DA1: Borderless Windowed
+        std::uint8_t* DA1_SetWindowLongWScanResult = Memory::PatternScan(exeModule, "74 ?? 8B ?? ?? ?? ?? ?? ?? ?? 50 FF ?? ?? ?? ?? ?? 5E C3");
+        if (DA1_SetWindowLongWScanResult) {
+            spdlog::info("DA1: Borderless: SetWindowLongW: Address is {:s}+{:x}", sExeName.c_str(), DA1_SetWindowLongWScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_SetWindowLongWMidHook{};
+            DA1_SetWindowLongWMidHook = safetyhook::create_mid(DA1_SetWindowLongWScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (ctx.esi + 0x168) {
+                        // Get HWND
+                        HWND hWnd = *reinterpret_cast<HWND*>(ctx.esi + 0x168);
+
+                        // Get styles
+                        LONG lStyle = GetWindowLongW(hWnd, GWL_STYLE);
+                        LONG lExStyle = GetWindowLongW(hWnd, GWL_EXSTYLE);
+
+                        // Apply borderless style
+                        lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+                        lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+                        SetWindowLongW(hWnd, GWL_STYLE, lStyle);
+                        SetWindowLongW(hWnd, GWL_EXSTYLE, lExStyle);
+                    }
+                });
+        }
+        else {
+            spdlog::error("DA1: Borderless: SetWindowLongW: Pattern scan failed.");
         }
     }
 }
@@ -427,6 +462,7 @@ DWORD __stdcall Main(void*)
     if (DetectGame()) {
         GameInit();
         CurrentResolution();
+        WindowManagement();
         AspectRatio();
         FOV();
         HUD();
