@@ -2,8 +2,9 @@
 - 
 
 ## Installation
-- Download the file marked `<RELEASE_ZIP_NAME>` from the "Assets" section below.
-- Extract the contents of the release zip in to the the game folder. e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" for Steam).
+- Download the file marked `<RELEASE_ZIP_NAME>` or `<RELEASE_ZIP_NAME>_EA` (if using EA/Origin) from the "Assets" section below.
+- Extract the contents of the release zip in to the the game folder. <br/>
+e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\Dragon Age II**" for Steam).
 
 ### Steam Deck/Linux Additional Instructions
 🚩**You do not need to do this if you are using Windows!**
