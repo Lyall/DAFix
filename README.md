@@ -5,6 +5,7 @@ This ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ultrawid
 
 ## Features
 ### General
+- [**DA:O**]: Borderless windowed mode.
 - [**DA:O**]: Adjustable HUD scale with automatic setting.
 
 ### Ultrawide
