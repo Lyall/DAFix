@@ -22,7 +22,7 @@ e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\
 
 ### Steam Deck/Linux Additional Instructions
 🚩**You do not need to do this if you are using Windows!**
-- Open up the game properties in Steam and add `WINEDLLOVERRIDES="winmm=n,b" %command%` to the launch options.
+- Open up the game properties in Steam and add `WINEDLLOVERRIDES="dinput8=n,b" %command%` to the launch options.
 
 ## Configuration
 - See **SotDFix.ini** to adjust settings.
