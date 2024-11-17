@@ -40,29 +40,46 @@ jobs:
         
     - name: Create Directory Structure
       run: |
-        mkdir .\zip\
-        mkdir .\zip\bin_ship
+        mkdir .\zip\ea\bin_ship
+        mkdir .\zip\gog\bin_ship
 
-    - name: Prepare Release Files
+    - name: Prepare GOG Files
       run: |
-        cp ${{ github.event.repository.name }}.asi .\zip\bin_ship\
-        cp ${{ github.event.repository.name }}.ini .\zip\bin_ship\
-        cp dinput8.dll .\zip\bin_ship\dinput8.dll
-        cp UltimateASILoader_LICENSE.md .\zip\
-        New-Item -Path ".\zip\EXTRACT_TO_GAME_FOLDER" -ItemType File
+        cp ${{ github.event.repository.name }}.asi .\zip\gog\bin_ship\
+        cp ${{ github.event.repository.name }}.ini .\zip\gog\bin_ship\
+        cp dinput8.dll .\zip\gog\bin_ship\dinput8.dll
+        cp UltimatgogSILoader_LICENSE.md .\zip\gog\
+        New-Item -Path ".\zip\gog\EXTRACT_TO_GAME_FOLDER" -ItemType File
+
+        $relgogseBody = "release_body.md"
+        $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
+        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
+    
+    - name: Create GOG Zip
+      run: |
+        cd .\zip\gog\
+        7z a -r -tzip ..\..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip .\*
+
+    - name: Prepare EA Files
+      run: |
+        cp ${{ github.event.repository.name }}.asi .\zip\ea\bin_ship\
+        cp ${{ github.event.repository.name }}.ini .\zip\ea\bin_ship\
+        cp dinput8.dll .\zip\ea\bin_ship\winhttp.dll
+        cp UltimateASILoader_LICENSE.md .\zip\ea\
+        New-Item -Path ".\zip\ea\EXTRACT_TO_GAME_FOLDER" -ItemType File
 
         $releaseBody = "release_body.md"
         $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
         (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
     
-    - name: Create Release Zip
+    - name: Create EA Zip
       run: |
-        cd .\zip\
-        7z a -r -tzip ..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip .\*
+        cd .\zip\ea\
+        7z a -r -tzip ..\..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip .\*
 
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip"
+        artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip, ${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ github.event.inputs.version }}
         name: "${{ github.event.inputs.version }}"
