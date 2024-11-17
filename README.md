@@ -2,7 +2,7 @@
 [![Patreon-Button](https://raw.githubusercontent.com/Lyall/DAFix/refs/heads/master/.github/Patreon-Button.png)](https://www.patreon.com/Wintermance) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01UAI9)<br />
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/DAFix/total.svg)](https://github.com/Lyall/DAFix/releases)
 
-This is an ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ultrawide display issues, adjusts HUD scaling, and more.
+This is an ASI plugin for Dragon Age: Origins and Dragon Age II that fixes various ultrawide display issues, adjusts HUD scaling, and more.
 
 ## Features
 ### General
@@ -14,7 +14,7 @@ This is an ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ul
 - [**DA:O**]: Fix foliage culling and shadow issues at ultrawide aspect ratios.
 
 ### Graphics
-- [**DA:O**]: Adjust various draw distances (Foliage, NPCs and objects).
+- [**DA:O**]: Adjust various draw distances (foliage, NPCs and objects).
 - [**DA:O**]: Adjust shadow resolution.
 
 ## Installation
@@ -40,8 +40,6 @@ e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\
 
 ## Known Issues
 Please report any issues you see.
-
-- [**DA:O/DA2**]: Main menu background is vert- at ultrawide aspect ratios.
 
 ## Credits
 [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) for ASI loading. <br />
