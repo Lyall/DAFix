@@ -1,7 +1,8 @@
 # Dragon Age 1/2 Fix
 [![Patreon-Button](https://raw.githubusercontent.com/Lyall/DAFix/refs/heads/master/.github/Patreon-Button.png)](https://www.patreon.com/Wintermance) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01UAI9)<br />
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/DAFix/total.svg)](https://github.com/Lyall/DAFix/releases)
-This ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ultrawide display issues, adjusts HUD scaling, and more.
+
+This is an ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ultrawide display issues, adjusts HUD scaling, and more.
 
 ## Features
 ### General
