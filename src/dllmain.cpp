@@ -88,7 +88,7 @@ void Logging()
     sExeName = sExePath.filename().string();
     sExePath = sExePath.remove_filename();
 
-    // spdlog initialisation
+    // Spdlog initialisation
     try {
         logger = spdlog::basic_logger_st(sFixName.c_str(), sExePath.string() + sLogFile, true);
         spdlog::set_default_logger(logger);
@@ -116,7 +116,7 @@ void Logging()
 
 void Configuration()
 {
-    // inipp initialisation
+    // Inipp initialisation
     std::ifstream iniFile(sFixPath.string() + sConfigFile);
     if (!iniFile) {
         AllocConsole();
@@ -162,11 +162,9 @@ void Configuration()
 
 bool DetectGame()
 {
-    for (const auto& [type, info] : kGames)
-    {
-        if (Util::stringcmp_caseless(info.ExeName, sExeName))
-        {
-            spdlog::info("Detected game: {:s} ({:s}).", info.GameTitle, sExeName);
+    for (const auto& [type, info] : kGames) {
+        if (Util::stringcmp_caseless(info.ExeName, sExeName)) {
+            spdlog::info("Detected game: {:s} ({:s})", info.GameTitle, sExeName);
             spdlog::info("----------");
             eGameType = type;
             game = &info;
@@ -416,7 +414,7 @@ void HUD()
 
 void Graphics()
 {
-    if (eGameType == Game::DA1 && (fFoliageDrawDistance > 0.00f && fNPCDrawDistance > 0.00f && fObjectDrawDistance > 0.00f)) {
+    if (eGameType == Game::DA1 && fFoliageDrawDistance > 0.00f && fNPCDrawDistance > 0.00f && fObjectDrawDistance > 0.00f) {
         // DA1: Foliage & Object Draw Distance
         std::uint8_t* DA1_FoliageDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? EB ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ??");
         std::uint8_t* DA1_ObjectDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? DE ?? DF ?? F6 ?? ?? 74 ?? C6 ?? ?? ?? 00");
