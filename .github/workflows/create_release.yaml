@@ -50,10 +50,6 @@ jobs:
         cp dinput8.dll .\zip\gog\bin_ship\dinput8.dll
         cp UltimateASILoader_LICENSE.md .\zip\gog\
         New-Item -Path ".\zip\gog\EXTRACT_TO_GAME_FOLDER" -ItemType File
-
-        $relgogseBody = "release_body.md"
-        $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
-        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
     
     - name: Create GOG Zip
       run: |
@@ -67,16 +63,18 @@ jobs:
         cp dinput8.dll .\zip\ea\bin_ship\winhttp.dll
         cp UltimateASILoader_LICENSE.md .\zip\ea\
         New-Item -Path ".\zip\ea\EXTRACT_TO_GAME_FOLDER" -ItemType File
-
-        $releaseBody = "release_body.md"
-        $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
-        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
     
     - name: Create EA Zip
       run: |
         cd .\zip\ea\
         7z a -r -tzip ..\..\${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip .\*
 
+    - name: Update release_body.md
+      run: |
+        $releaseBody = "release_body.md"
+        $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
+        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
+        
     - uses: ncipollo/release-action@v1
       with:
         artifacts: "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip, ${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip"
