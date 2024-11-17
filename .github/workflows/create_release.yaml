@@ -48,7 +48,7 @@ jobs:
         cp ${{ github.event.repository.name }}.asi .\zip\gog\bin_ship\
         cp ${{ github.event.repository.name }}.ini .\zip\gog\bin_ship\
         cp dinput8.dll .\zip\gog\bin_ship\dinput8.dll
-        cp UltimatgogSILoader_LICENSE.md .\zip\gog\
+        cp UltimateASILoader_LICENSE.md .\zip\gog\
         New-Item -Path ".\zip\gog\EXTRACT_TO_GAME_FOLDER" -ItemType File
 
         $relgogseBody = "release_body.md"
