@@ -74,6 +74,8 @@ jobs:
         $releaseBody = "release_body.md"
         $zipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}.zip" 
         (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME>', $zipName | Set-Content $releaseBody
+        $EAZipName = "${{ github.event.repository.name }}_${{ github.event.inputs.version }}_EA.zip" 
+        (Get-Content $releaseBody -Raw) -replace '<RELEASE_ZIP_NAME_EA>', $EAZipName | Set-Content $releaseBody
         
     - uses: ncipollo/release-action@v1
       with:
