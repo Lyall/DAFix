@@ -6,6 +6,8 @@
 #include <inipp/inipp.h>
 #include <safetyhook.hpp>
 
+#define spdlog_confparse(var) spdlog::info("Config Parse: {}: {}", #var, var)
+
 HMODULE exeModule = GetModuleHandle(NULL);
 HMODULE thisModule;
 
@@ -86,31 +88,29 @@ void Logging()
     sExePath = sExePath.remove_filename();
 
     // spdlog initialisation
-    {
-        try {
-            logger = spdlog::basic_logger_st(sFixName.c_str(), sExePath.string() + sLogFile, true);
-            spdlog::set_default_logger(logger);
-            spdlog::flush_on(spdlog::level::debug);
+    try {
+        logger = spdlog::basic_logger_st(sFixName.c_str(), sExePath.string() + sLogFile, true);
+        spdlog::set_default_logger(logger);
+        spdlog::flush_on(spdlog::level::debug);
 
-            spdlog::info("----------");
-            spdlog::info("{:s} v{:s} loaded.", sFixName.c_str(), sFixVersion.c_str());
-            spdlog::info("----------");
-            spdlog::info("Log file: {}", sFixPath.string() + sLogFile);
-            spdlog::info("----------");
-            spdlog::info("Module Name: {0:s}", sExeName.c_str());
-            spdlog::info("Module Path: {0:s}", sExePath.string());
-            spdlog::info("Module Address: 0x{0:x}", (uintptr_t)exeModule);
-            spdlog::info("Module Timestamp: {0:d}", Memory::ModuleTimestamp(exeModule));
-            spdlog::info("----------");
-        }
-        catch (const spdlog::spdlog_ex& ex) {
-            AllocConsole();
-            FILE* dummy;
-            freopen_s(&dummy, "CONOUT$", "w", stdout);
-            std::cout << "Log initialisation failed: " << ex.what() << std::endl;
-            FreeLibraryAndExitThread(thisModule, 1);
-        }
+        spdlog::info("----------");
+        spdlog::info("{:s} v{:s} loaded.", sFixName.c_str(), sFixVersion.c_str());
+        spdlog::info("----------");
+        spdlog::info("Log file: {}", sFixPath.string() + sLogFile);
+        spdlog::info("----------");
+        spdlog::info("Module Name: {0:s}", sExeName.c_str());
+        spdlog::info("Module Path: {0:s}", sExePath.string());
+        spdlog::info("Module Address: 0x{0:x}", (uintptr_t)exeModule);
+        spdlog::info("Module Timestamp: {0:d}", Memory::ModuleTimestamp(exeModule));
+        spdlog::info("----------");
     }
+    catch (const spdlog::spdlog_ex& ex) {
+        AllocConsole();
+        FILE* dummy;
+        freopen_s(&dummy, "CONOUT$", "w", stdout);
+        std::cout << "Log initialisation failed: " << ex.what() << std::endl;
+        FreeLibraryAndExitThread(thisModule, 1);
+    }  
 }
 
 void Configuration()
@@ -124,8 +124,8 @@ void Configuration()
         std::cout << "" << sFixName.c_str() << " v" << sFixVersion.c_str() << " loaded." << std::endl;
         std::cout << "ERROR: Could not locate config file." << std::endl;
         std::cout << "ERROR: Make sure " << sConfigFile.c_str() << " is located in " << sFixPath.string().c_str() << std::endl;
+        spdlog::shutdown();
         FreeLibraryAndExitThread(thisModule, 1);
-        return;
     }
     else {
         spdlog::info("Config file: {}", sFixPath.string() + sConfigFile);
@@ -136,24 +136,23 @@ void Configuration()
     ini.strip_trailing_comments();
     spdlog::info("----------");
 
+    // Load settings from ini
     inipp::get_value(ini.sections["Fix Aspect Ratio"], "Enabled", bFixAspect);
-    spdlog::info("Config Parse: bFixAspect: {}", bFixAspect);
-
     inipp::get_value(ini.sections["Disable Pillarboxing"], "Enabled", bDisablePillarboxing);
-    spdlog::info("Config Parse: bDisablePillarboxing: {}", bDisablePillarboxing);
-
     inipp::get_value(ini.sections["HUD Scale"], "Scale", fHUDScale);
-    spdlog::info("Config Parse: fHUDScale: {}", fHUDScale);
-
     inipp::get_value(ini.sections["Draw Distances"], "Foliage", fFoliageDrawDistance);
-    spdlog::info("Config Parse: fFoliageDrawDistance: {}", fFoliageDrawDistance);
     inipp::get_value(ini.sections["Draw Distances"], "NPC", fNPCDrawDistance);
-    spdlog::info("Config Parse: fNPCDrawDistance: {}", fNPCDrawDistance);
     inipp::get_value(ini.sections["Draw Distances"], "Object", fObjectDrawDistance);
-    spdlog::info("Config Parse: fObjectDrawDistance: {}", fObjectDrawDistance);
-
     inipp::get_value(ini.sections["Shadow Resolution"], "Resolution", iShadowResolution);
-    spdlog::info("Config Parse: iShadowResolution: {}", iShadowResolution);
+
+    // Log ini parse
+    spdlog_confparse(bFixAspect);
+    spdlog_confparse(bDisablePillarboxing);
+    spdlog_confparse(fHUDScale);
+    spdlog_confparse(fFoliageDrawDistance);
+    spdlog_confparse(fNPCDrawDistance);
+    spdlog_confparse(fObjectDrawDistance);
+    spdlog_confparse(iShadowResolution);
 
     spdlog::info("----------");
 }
@@ -164,7 +163,7 @@ bool DetectGame()
     {
         if (Util::stringcmp_caseless(info.ExeName, sExeName))
         {
-            spdlog::info("Detected game: {:s} ({:s})", info.GameTitle, sExeName);
+            spdlog::info("Detected game: {:s} ({:s}).", info.GameTitle, sExeName);
             spdlog::info("----------");
             eGameType = type;
             game = &info;
@@ -227,6 +226,7 @@ void GameInit()
 
     if (!GameInitScanResult) {
         spdlog::error("Failed to detect game initialisation.");
+        spdlog::shutdown();
         FreeLibraryAndExitThread(thisModule, 1);
     }
 }
@@ -258,76 +258,72 @@ void CurrentResolution()
 
 void AspectRatio()
 {   
-    if (bFixAspect) {
-        if (eGameType == Game::DA1) {
-            // DA1: Speedtree Culling
-            std::uint8_t* DA1_SpeedtreeCullingScanResult = Memory::PatternScan(exeModule, "F6 ?? 05 7B ?? D9 ?? ?? ?? ?? ?? DE ?? D9 ?? ?? ?? ?? ??");
-            if (DA1_SpeedtreeCullingScanResult) {
-                spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Address is {:s}+{:x}", sExeName.c_str(), DA1_SpeedtreeCullingScanResult - (std::uint8_t*)exeModule);
-                Memory::PatchBytes(DA1_SpeedtreeCullingScanResult + 0x2, "\x00", 1);
-                spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Patched instruction.");
-            }
-            else {
-                spdlog::error("DA1: Aspect Ratio: Speedtree Culling: Pattern scan failed.");
-            }
-
-            // DA1: Shadow Aspect Ratio
-            std::uint8_t* DA1_ShadowAspectRatioScanResult = Memory::PatternScan(exeModule, "8B ?? 8B ?? ?? ?? ?? ?? 8B ?? FF ?? DC ?? ?? ?? ?? ?? D9 ?? ?? ?? D9 ?? ?? ?? E8 ?? ?? ?? ??");
-            if (DA1_ShadowAspectRatioScanResult) {
-                spdlog::info("DA1: Aspect Ratio: Shadows: Address is {:s}+{:x}", sExeName.c_str(), DA1_ShadowAspectRatioScanResult - (std::uint8_t*)exeModule);
-                static SafetyHookMid DA1_ShadowAspectRatioMidHook{};
-                DA1_ShadowAspectRatioMidHook = safetyhook::create_mid(DA1_ShadowAspectRatioScanResult,
-                    [](SafetyHookContext& ctx) {
-                        if (fAspectRatio > fNativeAspect && ctx.esp)
-                            *reinterpret_cast<float*>(ctx.esp + 0xC) = fNativeAspect;
-                    });
-            }
-            else {
-                spdlog::error("DA1: Aspect Ratio: Shadows: Pattern scan failed.");
-            }
+    if (eGameType == Game::DA1 && bFixAspect) {
+        // DA1: Speedtree Culling
+        std::uint8_t* DA1_SpeedtreeCullingScanResult = Memory::PatternScan(exeModule, "F6 ?? 05 7B ?? D9 ?? ?? ?? ?? ?? DE ?? D9 ?? ?? ?? ?? ??");
+        if (DA1_SpeedtreeCullingScanResult) {
+            spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Address is {:s}+{:x}", sExeName.c_str(), DA1_SpeedtreeCullingScanResult - (std::uint8_t*)exeModule);
+            Memory::PatchBytes(DA1_SpeedtreeCullingScanResult + 0x2, "\x00", 1);
+            spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Patched instruction.");
         }
+        else {
+            spdlog::error("DA1: Aspect Ratio: Speedtree Culling: Pattern scan failed.");
+        }
+
+        // DA1: Shadow Aspect Ratio
+        std::uint8_t* DA1_ShadowAspectRatioScanResult = Memory::PatternScan(exeModule, "8B ?? 8B ?? ?? ?? ?? ?? 8B ?? FF ?? DC ?? ?? ?? ?? ?? D9 ?? ?? ?? D9 ?? ?? ?? E8 ?? ?? ?? ??");
+        if (DA1_ShadowAspectRatioScanResult) {
+            spdlog::info("DA1: Aspect Ratio: Shadows: Address is {:s}+{:x}", sExeName.c_str(), DA1_ShadowAspectRatioScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_ShadowAspectRatioMidHook{};
+            DA1_ShadowAspectRatioMidHook = safetyhook::create_mid(DA1_ShadowAspectRatioScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (fAspectRatio > fNativeAspect && ctx.esp)
+                        *reinterpret_cast<float*>(ctx.esp + 0xC) = fNativeAspect;
+                });
+        }
+        else {
+            spdlog::error("DA1: Aspect Ratio: Shadows: Pattern scan failed.");
+        }    
     }
     
-    if (bDisablePillarboxing) {
-        if (eGameType == Game::DA1) {
-            // DA1: Dialog Pillarboxing
-            std::uint8_t* DA1_PillarboxingScanResult = Memory::PatternScan(exeModule, "FF ?? 8B ?? ?? ?? ?? ?? 85 C0 74 ?? C6 ?? ?? 01");
-            if (DA1_PillarboxingScanResult) {
-                spdlog::info("DA1: Aspect Ratio: Dialog Pillarboxing: Address is {:s}+{:x}", sExeName.c_str(), DA1_PillarboxingScanResult - (std::uint8_t*)exeModule);
-                static SafetyHookMid DA1_PillarboxingMidHook{};
-                DA1_PillarboxingMidHook = safetyhook::create_mid(DA1_PillarboxingScanResult,
-                    [](SafetyHookContext& ctx) {
-                        if (ctx.esp) {
-                            *reinterpret_cast<int*>(ctx.esp + 0x0) = 0;             // Left
-                            *reinterpret_cast<int*>(ctx.esp + 0x4) = 0;             // Right
-                            *reinterpret_cast<int*>(ctx.esp + 0x8) = iCurrentResX;  // Width
-                            *reinterpret_cast<int*>(ctx.esp + 0xC) = iCurrentResY;  // Height
-                        }
-                    });
-            }
-            else {
-                spdlog::error("DA1: Aspect Ratio: Dialog Pillarboxing: Pattern scan failed.");
-            }
+    if (eGameType == Game::DA1 && bDisablePillarboxing) {
+        // DA1: Dialog Pillarboxing
+        std::uint8_t* DA1_PillarboxingScanResult = Memory::PatternScan(exeModule, "FF ?? 8B ?? ?? ?? ?? ?? 85 C0 74 ?? C6 ?? ?? 01");
+        if (DA1_PillarboxingScanResult) {
+            spdlog::info("DA1: Aspect Ratio: Dialog Pillarboxing: Address is {:s}+{:x}", sExeName.c_str(), DA1_PillarboxingScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_PillarboxingMidHook{};
+            DA1_PillarboxingMidHook = safetyhook::create_mid(DA1_PillarboxingScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (ctx.esp) {
+                        *reinterpret_cast<int*>(ctx.esp + 0x0) = 0;             // Left
+                        *reinterpret_cast<int*>(ctx.esp + 0x4) = 0;             // Right
+                        *reinterpret_cast<int*>(ctx.esp + 0x8) = iCurrentResX;  // Width
+                        *reinterpret_cast<int*>(ctx.esp + 0xC) = iCurrentResY;  // Height
+                    }
+                });
         }
-        else if (eGameType == Game::DA2) {
-            // DA2: Dialog Pillarboxing
-            std::uint8_t* DA2_PillarboxingScanResult = Memory::PatternScan(exeModule, "89 ?? ?? ?? 89 ?? ?? ?? EB ?? DD ?? DE ?? DF ?? F6 ?? ?? 7A ??");
-            if (DA2_PillarboxingScanResult) {
-                spdlog::info("DA2: Aspect Ratio: Dialog Pillarboxing: Address is {:s}+{:x}", sExeName.c_str(), DA2_PillarboxingScanResult - (std::uint8_t*)exeModule);
-                static SafetyHookMid DA2_PillarboxingMidHook{};
-                DA2_PillarboxingMidHook = safetyhook::create_mid(DA2_PillarboxingScanResult,
-                    [](SafetyHookContext& ctx) {
-                        ctx.ebx = 0;            // Left
-                        ctx.ebp = 0;            // Right
-                        ctx.ecx = iCurrentResX; // Width
-                        ctx.edx = iCurrentResY; // Height
-                    });
-            }
-            else {
-                spdlog::error("DA2: Aspect Ratio: Dialog Pillarboxing: Pattern scan failed.");
-            }
+        else {
+            spdlog::error("DA1: Aspect Ratio: Dialog Pillarboxing: Pattern scan failed.");
         }
     }
+    else if (eGameType == Game::DA2 && bDisablePillarboxing) {
+        // DA2: Dialog Pillarboxing
+        std::uint8_t* DA2_PillarboxingScanResult = Memory::PatternScan(exeModule, "89 ?? ?? ?? 89 ?? ?? ?? EB ?? DD ?? DE ?? DF ?? F6 ?? ?? 7A ??");
+        if (DA2_PillarboxingScanResult) {
+            spdlog::info("DA2: Aspect Ratio: Dialog Pillarboxing: Address is {:s}+{:x}", sExeName.c_str(), DA2_PillarboxingScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA2_PillarboxingMidHook{};
+            DA2_PillarboxingMidHook = safetyhook::create_mid(DA2_PillarboxingScanResult,
+                [](SafetyHookContext& ctx) {
+                    ctx.ebx = 0;            // Left
+                    ctx.ebp = 0;            // Right
+                    ctx.ecx = iCurrentResX; // Width
+                    ctx.edx = iCurrentResY; // Height
+                });
+        }
+        else {
+            spdlog::error("DA2: Aspect Ratio: Dialog Pillarboxing: Pattern scan failed.");
+        }
+    }   
 }
 
 void FOV()
@@ -352,80 +348,74 @@ void FOV()
 
 void HUD()
 {
-    if (fHUDScale >= 0.00f && fHUDScale <= 1.00f) {
-        if (eGameType == Game::DA1) {
-            // DA1: HUD Scale
-            std::uint8_t* HUDScaleScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? 8B ?? D9 ?? ?? ?? D9 ?? ?? ?? 8B ?? ?? 53");
-            if (HUDScaleScanResult) {
-                spdlog::info("DA1: HUD: HUD Scale: Address is {:s}+{:x}", sExeName.c_str(), HUDScaleScanResult - (std::uint8_t*)exeModule);
-                static SafetyHookMid HUDScaleMidHook{};
-                HUDScaleMidHook = safetyhook::create_mid(HUDScaleScanResult,
-                    [](SafetyHookContext& ctx) {
-                        if (ctx.esp) {
-                            if (fHUDScale == 0.00f) {
-                                // Automatic HUD scale
-                                if (fAspectRatio > 1.333333f && iCurrentResY > 768) {
-                                    *reinterpret_cast<float*>(ctx.esp + 0x08) = 768.00f / (float)iCurrentResY;
-                                }
-                                else if (fAspectRatio <= 1.33333f && iCurrentResX > 1024) {
-                                    *reinterpret_cast<float*>(ctx.esp + 0x08) = 1024.00f / (float)iCurrentResX;
-                                }
+    if (eGameType == Game::DA1 && fHUDScale >= 0.00f && fHUDScale <= 1.00f) {
+        // DA1: HUD Scale
+        std::uint8_t* DA1_HUDScaleScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? 8B ?? D9 ?? ?? ?? D9 ?? ?? ?? 8B ?? ?? 53");
+        if (DA1_HUDScaleScanResult) {
+            spdlog::info("DA1: HUD: HUD Scale: Address is {:s}+{:x}", sExeName.c_str(), DA1_HUDScaleScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_HUDScaleMidHook{};
+            DA1_HUDScaleMidHook = safetyhook::create_mid(DA1_HUDScaleScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (ctx.esp) {
+                        if (fHUDScale == 0.00f) {
+                            // Automatic HUD scale
+                            if (fAspectRatio > 1.333333f && iCurrentResY > 768) {
+                                *reinterpret_cast<float*>(ctx.esp + 0x08) = 768.00f / (float)iCurrentResY;
                             }
-                            else {
-                                // Custom HUD scale
-                                *reinterpret_cast<float*>(ctx.esp + 0x08) = fHUDScale;
+                            else if (fAspectRatio <= 1.33333f && iCurrentResX > 1024) {
+                                *reinterpret_cast<float*>(ctx.esp + 0x08) = 1024.00f / (float)iCurrentResX;
                             }
                         }
-                    });
-            }
-            else {
-                spdlog::error("DA1: HUD: HUD Scale: Pattern scan failed.");
-            }
+                        else {
+                            // Custom HUD scale
+                            *reinterpret_cast<float*>(ctx.esp + 0x08) = fHUDScale;
+                        }
+                    }
+                });
         }
+        else {
+            spdlog::error("DA1: HUD: HUD Scale: Pattern scan failed.");
+        }       
     }
 }
 
 void Graphics()
 {
-    if (fFoliageDrawDistance > 0.00f && fNPCDrawDistance > 0.00f && fObjectDrawDistance > 0.00f) {
-        if (eGameType == Game::DA1) {
-            // DA1: Foliage & Object Draw Distance
-            std::uint8_t* FoliageDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? EB ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ??");
-            std::uint8_t* ObjectDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? DE ?? DF ?? F6 ?? ?? 74 ?? C6 ?? ?? ?? 00");
-            if (FoliageDrawDistanceScanResult && ObjectDrawDistanceScanResult) {
-                spdlog::info("DA1: Graphics: Draw Distance: Foliage: Scan address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistanceScanResult - (std::uint8_t*)exeModule);
-                spdlog::info("DA1: Graphics: Draw Distance: Object: Scan address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistanceScanResult - (std::uint8_t*)exeModule);
+    if (eGameType == Game::DA1 && (fFoliageDrawDistance > 0.00f && fNPCDrawDistance > 0.00f && fObjectDrawDistance > 0.00f)) {
+        // DA1: Foliage & Object Draw Distance
+        std::uint8_t* DA1_FoliageDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? EB ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ??");
+        std::uint8_t* DA1_ObjectDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? DE ?? DF ?? F6 ?? ?? 74 ?? C6 ?? ?? ?? 00");
+        if (DA1_FoliageDrawDistanceScanResult && DA1_ObjectDrawDistanceScanResult) {
+            spdlog::info("DA1: Graphics: Draw Distance: Foliage: Scan address is {:s}+{:x}", sExeName.c_str(), DA1_FoliageDrawDistanceScanResult - (std::uint8_t*)exeModule);
+            spdlog::info("DA1: Graphics: Draw Distance: Object: Scan address is {:s}+{:x}", sExeName.c_str(), DA1_ObjectDrawDistanceScanResult - (std::uint8_t*)exeModule);
 
-                std::uint8_t* FoliageDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(FoliageDrawDistanceScanResult + 0x2);
-                spdlog::info("DA1: Graphics: Draw Distance: Foliage: Address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistance - (std::uint8_t*)exeModule);
-                std::uint8_t* NPCDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(FoliageDrawDistanceScanResult + 0xE);
-                spdlog::info("DA1: Graphics: Draw Distance: NPC: Address is {:s}+{:x}", sExeName.c_str(), NPCDrawDistance - (std::uint8_t*)exeModule);
+            std::uint8_t* FoliageDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(DA1_FoliageDrawDistanceScanResult + 0x2);
+            spdlog::info("DA1: Graphics: Draw Distance: Foliage: Address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistance - (std::uint8_t*)exeModule);
+            std::uint8_t* NPCDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(DA1_FoliageDrawDistanceScanResult + 0xE);
+            spdlog::info("DA1: Graphics: Draw Distance: NPC: Address is {:s}+{:x}", sExeName.c_str(), NPCDrawDistance - (std::uint8_t*)exeModule);
 
-                std::uint8_t* ObjectDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(ObjectDrawDistanceScanResult + 0x2);
-                spdlog::info("DA1: Graphics: Draw Distance: Object: Address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistance - (std::uint8_t*)exeModule);
+            std::uint8_t* ObjectDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(DA1_ObjectDrawDistanceScanResult + 0x2);
+            spdlog::info("DA1: Graphics: Draw Distance: Object: Address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistance - (std::uint8_t*)exeModule);
 
-                Memory::Write(FoliageDrawDistance, fFoliageDrawDistance);                   // Default very high = 1.5f
-                Memory::Write(NPCDrawDistance, fNPCDrawDistance);                           // Default very high = 60.0f
-                Memory::Write(ObjectDrawDistance, fObjectDrawDistance);                     // Default = 60.0f
-            }
-            else {
-                spdlog::error("DA1: Graphics: Draw Distance: Pattern scan(s) failed.");
-            }
+            Memory::Write(FoliageDrawDistance, fFoliageDrawDistance);                   // Default very high = 1.5f
+            Memory::Write(NPCDrawDistance, fNPCDrawDistance);                           // Default very high = 60.0f
+            Memory::Write(ObjectDrawDistance, fObjectDrawDistance);                     // Default = 60.0f
         }
+        else {
+            spdlog::error("DA1: Graphics: Draw Distance: Pattern scan(s) failed.");
+        }     
     }
 
-    if (iShadowResolution != 1024) {
-        if (eGameType == Game::DA1) {
-            // DA1: Shadow Resolution
-            std::uint8_t* ShadowResolutionScanResult = Memory::PatternScan(exeModule, "C7 ?? ?? ?? ?? ?? 00 04 00 00 56 57 E8 ?? ?? ?? ??");
-            if (ShadowResolutionScanResult) {
-                spdlog::info("DA1: Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), ShadowResolutionScanResult - (std::uint8_t*)exeModule);
-                Memory::Write(ShadowResolutionScanResult + 0x6, iShadowResolution);      // Default very high = 1024
-                spdlog::info("DA1: Graphics: Shadow Resolution: Patched instruction.");
-            }
-            else {
-                spdlog::error("DA1: Graphics: Shadow Resolution: Pattern scan failed.");
-            }
+    if (eGameType == Game::DA1 && iShadowResolution != 1024) {
+        // DA1: Shadow Resolution
+        std::uint8_t* DA1_ShadowResolutionScanResult = Memory::PatternScan(exeModule, "C7 ?? ?? ?? ?? ?? 00 04 00 00 56 57 E8 ?? ?? ?? ??");
+        if (DA1_ShadowResolutionScanResult) {
+            spdlog::info("DA1: Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), DA1_ShadowResolutionScanResult - (std::uint8_t*)exeModule);
+            Memory::Write(DA1_ShadowResolutionScanResult + 0x6, iShadowResolution);      // Default very high = 1024
+            spdlog::info("DA1: Graphics: Shadow Resolution: Patched instruction.");
+        }
+        else {
+            spdlog::error("DA1: Graphics: Shadow Resolution: Pattern scan failed.");
         }
     }
 }
