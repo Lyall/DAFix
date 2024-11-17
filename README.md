@@ -25,7 +25,7 @@ e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\
 - Open up the game properties in Steam and add `WINEDLLOVERRIDES="dinput8=n,b" %command%` to the launch options.
 
 ## Configuration
-- See **SotDFix.ini** to adjust settings.
+- See **DAFix.ini** to adjust settings.
 
 ## Screenshots
 | ![ezgif-6-61a319619b](https://github.com/user-attachments/assets/2e2f76ff-ecd1-4920-8b02-1e8ecf8a1095) |
