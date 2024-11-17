@@ -8,7 +8,7 @@ This ASI plugin for Dragon Age: Origins and Dragon Age II fixes various ultrawid
 - [**DA:O**]: Adjustable HUD scale with automatic setting.
 
 ### Ultrawide
-- [**DA:O**] / [**DA2**]: Disable pillarboxing during dialog/cutscenes.
+- [**DA:O/DA2**]: Disable pillarboxing during dialog/cutscenes.
 - [**DA:O**]: Fix foliage culling and shadow issues at ultrawide aspect ratios.
 
 ### Graphics
@@ -39,7 +39,7 @@ e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\
 ## Known Issues
 Please report any issues you see.
 
-- [**DA:O**] / [**DA2**]: Main menu background is vert- at ultrawide aspect ratios.
+- [**DA:O/DA2**]: Main menu background is vert- at ultrawide aspect ratios.
 
 ## Credits
 [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) for ASI loading. <br />
