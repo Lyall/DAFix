@@ -211,27 +211,6 @@ void CalculateAspectRatio(bool bLog)
     }
 }
 
-void GameInit()
-{
-    // Wait up to 30s for the game to initialise
-    std::uint8_t* GameInitScanResult = nullptr;
-    for (int attempt = 1; attempt <= 150; ++attempt) {
-        GameInitScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? D9 ?? ?? ?? ?? ?? 32 ?? 5E 8B ?? 5D C2 ?? ??");
-        if (GameInitScanResult) {
-            spdlog::info("Game initialisation complete.");
-            spdlog::info("----------");
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
-    if (!GameInitScanResult) {
-        spdlog::error("Failed to detect game initialisation.");
-        spdlog::shutdown();
-        FreeLibraryAndExitThread(thisModule, 1);
-    }
-}
-
 void CurrentResolution()
 {
     if (eGameType == Game::DA1 || eGameType == Game::DA2) {
@@ -458,7 +437,6 @@ DWORD __stdcall Main(void*)
     Logging();
     Configuration();
     if (DetectGame()) {
-        GameInit();
         CurrentResolution();
         WindowManagement();
         AspectRatio();
