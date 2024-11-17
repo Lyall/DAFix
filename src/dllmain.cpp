@@ -260,23 +260,23 @@ void AspectRatio()
 {   
     if (bFixAspect) {
         if (eGameType == Game::DA1) {
-            // Speedtree Culling
-            std::uint8_t* SpeedtreeCullingScanResult = Memory::PatternScan(exeModule, "F6 ?? 05 7B ?? D9 ?? ?? ?? ?? ?? DE ?? D9 ?? ?? ?? ?? ??");
-            if (SpeedtreeCullingScanResult) {
-                spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Address is {:s}+{:x}", sExeName.c_str(), SpeedtreeCullingScanResult - (std::uint8_t*)exeModule);
-                Memory::PatchBytes(SpeedtreeCullingScanResult + 0x2, "\x00", 1);
+            // DA1: Speedtree Culling
+            std::uint8_t* DA1_SpeedtreeCullingScanResult = Memory::PatternScan(exeModule, "F6 ?? 05 7B ?? D9 ?? ?? ?? ?? ?? DE ?? D9 ?? ?? ?? ?? ??");
+            if (DA1_SpeedtreeCullingScanResult) {
+                spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Address is {:s}+{:x}", sExeName.c_str(), DA1_SpeedtreeCullingScanResult - (std::uint8_t*)exeModule);
+                Memory::PatchBytes(DA1_SpeedtreeCullingScanResult + 0x2, "\x00", 1);
                 spdlog::info("DA1: Aspect Ratio: Speedtree Culling: Patched instruction.");
             }
             else {
                 spdlog::error("DA1: Aspect Ratio: Speedtree Culling: Pattern scan failed.");
             }
 
-            // Shadow Aspect Ratio
-            std::uint8_t* ShadowAspectRatioScanResult = Memory::PatternScan(exeModule, "8B ?? 8B ?? ?? ?? ?? ?? 8B ?? FF ?? DC ?? ?? ?? ?? ?? D9 ?? ?? ?? D9 ?? ?? ?? E8 ?? ?? ?? ??");
-            if (ShadowAspectRatioScanResult) {
-                spdlog::info("DA1: Aspect Ratio: Shadows: Address is {:s}+{:x}", sExeName.c_str(), ShadowAspectRatioScanResult - (std::uint8_t*)exeModule);
-                static SafetyHookMid ShadowAspectRatioMidHook{};
-                ShadowAspectRatioMidHook = safetyhook::create_mid(ShadowAspectRatioScanResult,
+            // DA1: Shadow Aspect Ratio
+            std::uint8_t* DA1_ShadowAspectRatioScanResult = Memory::PatternScan(exeModule, "8B ?? 8B ?? ?? ?? ?? ?? 8B ?? FF ?? DC ?? ?? ?? ?? ?? D9 ?? ?? ?? D9 ?? ?? ?? E8 ?? ?? ?? ??");
+            if (DA1_ShadowAspectRatioScanResult) {
+                spdlog::info("DA1: Aspect Ratio: Shadows: Address is {:s}+{:x}", sExeName.c_str(), DA1_ShadowAspectRatioScanResult - (std::uint8_t*)exeModule);
+                static SafetyHookMid DA1_ShadowAspectRatioMidHook{};
+                DA1_ShadowAspectRatioMidHook = safetyhook::create_mid(DA1_ShadowAspectRatioScanResult,
                     [](SafetyHookContext& ctx) {
                         if (fAspectRatio > fNativeAspect && ctx.esp)
                             *reinterpret_cast<float*>(ctx.esp + 0xC) = fNativeAspect;
@@ -310,18 +310,17 @@ void AspectRatio()
             }
         }
         else if (eGameType == Game::DA2) {
-            std::uint8_t* DA2_PillarboxingScanResult = Memory::PatternScan(exeModule, "F6 ?? 05 7A ?? 8B ?? ?? ?? ?? ?? 85 C0 74 ?? C6 ?? ?? 01");
+            // DA2: Dialog Pillarboxing
+            std::uint8_t* DA2_PillarboxingScanResult = Memory::PatternScan(exeModule, "89 ?? ?? ?? 89 ?? ?? ?? EB ?? DD ?? DE ?? DF ?? F6 ?? ?? 7A ??");
             if (DA2_PillarboxingScanResult) {
                 spdlog::info("DA2: Aspect Ratio: Dialog Pillarboxing: Address is {:s}+{:x}", sExeName.c_str(), DA2_PillarboxingScanResult - (std::uint8_t*)exeModule);
                 static SafetyHookMid DA2_PillarboxingMidHook{};
                 DA2_PillarboxingMidHook = safetyhook::create_mid(DA2_PillarboxingScanResult,
                     [](SafetyHookContext& ctx) {
-                        if (ctx.esi) {
-                            *reinterpret_cast<int*>(ctx.esi + 0x38) = 0;            // Left
-                            *reinterpret_cast<int*>(ctx.esi + 0x3C) = 0;            // Right
-                            *reinterpret_cast<int*>(ctx.esi + 0x40) = iCurrentResX; // Width
-                            *reinterpret_cast<int*>(ctx.esi + 0x44) = iCurrentResY; // Height
-                        }
+                        ctx.ebx = 0;            // Left
+                        ctx.ebp = 0;            // Right
+                        ctx.ecx = iCurrentResX; // Width
+                        ctx.edx = iCurrentResY; // Height
                     });
             }
             else {
@@ -335,11 +334,11 @@ void FOV()
 {
     if ((eGameType == Game::DA1 || eGameType == Game::DA2) && bDisablePillarboxing) {
         // DA1/DA2: Dialog FOV
-        std::uint8_t* DialogFOVScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? D9 ?? ?? ?? ?? ?? 32 ?? 5E 8B ?? 5D C2 ?? ??");
-        if (DialogFOVScanResult) {
-            spdlog::info("DA1/DA2: FOV: Dialog: Address is {:s}+{:x}", sExeName.c_str(), DialogFOVScanResult - (std::uint8_t*)exeModule);
-            static SafetyHookMid DialogFOVMidHook{};
-            DialogFOVMidHook = safetyhook::create_mid(DialogFOVScanResult,
+        std::uint8_t* DA1_DA2_DialogFOVScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? D9 ?? ?? ?? ?? ?? 32 ?? 5E 8B ?? 5D C2 ?? ??");
+        if (DA1_DA2_DialogFOVScanResult) {
+            spdlog::info("DA1/DA2: FOV: Dialog: Address is {:s}+{:x}", sExeName.c_str(), DA1_DA2_DialogFOVScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_DA2_DialogFOVMidHook{};
+            DA1_DA2_DialogFOVMidHook = safetyhook::create_mid(DA1_DA2_DialogFOVScanResult,
                 [](SafetyHookContext& ctx) {
                     if (fAspectRatio > fNativeAspect && ctx.esp)
                         *reinterpret_cast<float*>(ctx.esp + 0xC) = atanf(tanf(*reinterpret_cast<float*>(ctx.esp + 0xC) * (fPi / 360)) / fNativeAspect * fAspectRatio) * (360 / fPi);
@@ -355,7 +354,7 @@ void HUD()
 {
     if (fHUDScale >= 0.00f && fHUDScale <= 1.00f) {
         if (eGameType == Game::DA1) {
-            // HUD Scale
+            // DA1: HUD Scale
             std::uint8_t* HUDScaleScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? 8B ?? D9 ?? ?? ?? D9 ?? ?? ?? 8B ?? ?? 53");
             if (HUDScaleScanResult) {
                 spdlog::info("DA1: HUD: HUD Scale: Address is {:s}+{:x}", sExeName.c_str(), HUDScaleScanResult - (std::uint8_t*)exeModule);
@@ -390,42 +389,42 @@ void Graphics()
 {
     if (fFoliageDrawDistance > 0.00f && fNPCDrawDistance > 0.00f && fObjectDrawDistance > 0.00f) {
         if (eGameType == Game::DA1) {
-            // Foliage Draw Distance
+            // DA1: Foliage & Object Draw Distance
             std::uint8_t* FoliageDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? EB ?? D9 ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ??");
             std::uint8_t* ObjectDrawDistanceScanResult = Memory::PatternScan(exeModule, "D9 ?? ?? ?? ?? ?? DE ?? DF ?? F6 ?? ?? 74 ?? C6 ?? ?? ?? 00");
             if (FoliageDrawDistanceScanResult && ObjectDrawDistanceScanResult) {
-                spdlog::info("Graphics: Draw Distance: Foliage: Scan address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistanceScanResult - (std::uint8_t*)exeModule);
-                spdlog::info("Graphics: Draw Distance: Object: Scan address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistanceScanResult - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Draw Distance: Foliage: Scan address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistanceScanResult - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Draw Distance: Object: Scan address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistanceScanResult - (std::uint8_t*)exeModule);
 
                 std::uint8_t* FoliageDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(FoliageDrawDistanceScanResult + 0x2);
-                spdlog::info("Graphics: Draw Distance: Foliage: Address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistance - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Draw Distance: Foliage: Address is {:s}+{:x}", sExeName.c_str(), FoliageDrawDistance - (std::uint8_t*)exeModule);
                 std::uint8_t* NPCDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(FoliageDrawDistanceScanResult + 0xE);
-                spdlog::info("Graphics: Draw Distance: NPC: Address is {:s}+{:x}", sExeName.c_str(), NPCDrawDistance - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Draw Distance: NPC: Address is {:s}+{:x}", sExeName.c_str(), NPCDrawDistance - (std::uint8_t*)exeModule);
 
                 std::uint8_t* ObjectDrawDistance = (std::uint8_t*)*reinterpret_cast<std::uint32_t*>(ObjectDrawDistanceScanResult + 0x2);
-                spdlog::info("Graphics: Draw Distance: Object: Address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistance - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Draw Distance: Object: Address is {:s}+{:x}", sExeName.c_str(), ObjectDrawDistance - (std::uint8_t*)exeModule);
 
                 Memory::Write(FoliageDrawDistance, fFoliageDrawDistance);                   // Default very high = 1.5f
                 Memory::Write(NPCDrawDistance, fNPCDrawDistance);                           // Default very high = 60.0f
                 Memory::Write(ObjectDrawDistance, fObjectDrawDistance);                     // Default = 60.0f
             }
             else {
-                spdlog::error("Graphics: Draw Distance: Pattern scan(s) failed.");
+                spdlog::error("DA1: Graphics: Draw Distance: Pattern scan(s) failed.");
             }
         }
     }
 
     if (iShadowResolution != 1024) {
         if (eGameType == Game::DA1) {
-            // Shadow Resolution
+            // DA1: Shadow Resolution
             std::uint8_t* ShadowResolutionScanResult = Memory::PatternScan(exeModule, "C7 ?? ?? ?? ?? ?? 00 04 00 00 56 57 E8 ?? ?? ?? ??");
             if (ShadowResolutionScanResult) {
-                spdlog::info("Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), ShadowResolutionScanResult - (std::uint8_t*)exeModule);
+                spdlog::info("DA1: Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), ShadowResolutionScanResult - (std::uint8_t*)exeModule);
                 Memory::Write(ShadowResolutionScanResult + 0x6, iShadowResolution);      // Default very high = 1024
-                spdlog::info("Graphics: Shadow Resolution: Patched instruction.");
+                spdlog::info("DA1: Graphics: Shadow Resolution: Patched instruction.");
             }
             else {
-                spdlog::error("Graphics: Shadow Resolution: Pattern scan failed.");
+                spdlog::error("DA1: Graphics: Shadow Resolution: Pattern scan failed.");
             }
         }
     }
