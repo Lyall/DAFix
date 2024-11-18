@@ -2,11 +2,11 @@
 [![Patreon-Button](https://raw.githubusercontent.com/Lyall/DAFix/refs/heads/master/.github/Patreon-Button.png)](https://www.patreon.com/Wintermance) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01UAI9)<br />
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/DAFix/total.svg)](https://github.com/Lyall/DAFix/releases)
 
-This is an ASI plugin for Dragon Age: Origins and Dragon Age II that fixes various ultrawide display issues, adjusts HUD scaling, and more.
+This is an ASI plugin for Dragon Age: Origins and Dragon Age II that fixes various ultrawide display issues, adds borderless windowed mode and more.
 
 ## Features
 ### General
-- [**DA:O**]: Borderless windowed mode.
+- [**DA:O/DA2**]: Borderless windowed mode.
 - [**DA:O**]: Adjustable HUD scale with automatic setting.
 
 ### Ultrawide
@@ -30,13 +30,14 @@ e.g. ("**steamapps\common\Dragon Age Ultimate Edition**" or "**steamapps\common\
 - See **DAFix.ini** to adjust settings.
 
 ## Screenshots
-| ![ezgif-6-61a319619b](https://github.com/user-attachments/assets/2e2f76ff-ecd1-4920-8b02-1e8ecf8a1095) |
-|:--------------------------:|
-| [**DA:O**]: In-game |
 
 | ![ezgif-6-2eb16dc058](https://github.com/user-attachments/assets/2ca570e5-e2d1-49a8-ae7c-682bfab8b04c) |
 |:--------------------------:|
 | [**DA:O**]: Dialog |
+
+| ![ezgif-4-f9e38d99a5](https://github.com/user-attachments/assets/654587e5-f5f1-452c-973f-35fd79ffe873) |
+|:--------------------------:|
+| [**DA2**]: Cutscene |
 
 ## Known Issues
 Please report any issues you see.
