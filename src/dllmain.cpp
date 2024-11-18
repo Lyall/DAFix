@@ -213,6 +213,12 @@ void CalculateAspectRatio(bool bLog)
 
 void CurrentResolution()
 {
+    // Grab desktop resolution/aspect just in case
+    DesktopDimensions = Util::GetPhysicalDesktopDimensions();
+    iCurrentResX = DesktopDimensions.first;
+    iCurrentResY = DesktopDimensions.second;
+    CalculateAspectRatio(false);
+
     if (eGameType == Game::DA1 || eGameType == Game::DA2) {
         // DA1/DA2: Current Resolution
         std::uint8_t* CurrentResolutionScanResult = Memory::MultiPatternScan(exeModule, { "D9 ?? ?? ?? ?? ?? 85 ?? DB ?? ?? ?? ?? ?? ?? 7D ?? D8 ?? ?? ?? ?? ??", "DB ?? ?? ?? ?? ?? ?? 85 ?? 7D ?? D8 ?? ?? ?? ?? ?? 8B ?? ?? ?? ?? ?? ?? D9 ?? ?? ?? ?? ?? D9 ??" });
@@ -240,30 +246,73 @@ void WindowManagement()
 {
     if (eGameType == Game::DA1 && bBorderlessWindowed) {
         // DA1: Borderless Windowed
-        std::uint8_t* DA1_SetWindowLongWScanResult = Memory::PatternScan(exeModule, "74 ?? 8B ?? ?? ?? ?? ?? ?? ?? 50 FF ?? ?? ?? ?? ?? 5E C3");
-        if (DA1_SetWindowLongWScanResult) {
-            spdlog::info("DA1: Borderless: SetWindowLongW: Address is {:s}+{:x}", sExeName.c_str(), DA1_SetWindowLongWScanResult - (std::uint8_t*)exeModule);
-            static SafetyHookMid DA1_SetWindowLongWMidHook{};
-            DA1_SetWindowLongWMidHook = safetyhook::create_mid(DA1_SetWindowLongWScanResult,
+        std::uint8_t* DA1_BorderlessScanResult = Memory::PatternScan(exeModule, "74 ?? 8B ?? ?? ?? ?? ?? ?? ?? 50 FF ?? ?? ?? ?? ?? 5E C3");
+        if (DA1_BorderlessScanResult) {
+            spdlog::info("DA1: Borderless: Address is {:s}+{:x}", sExeName.c_str(), DA1_BorderlessScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA1_BorderlessMidHook{};
+            DA1_BorderlessMidHook = safetyhook::create_mid(DA1_BorderlessScanResult,
                 [](SafetyHookContext& ctx) {
-                    if (ctx.esi + 0x168) {
-                        // Get HWND
-                        HWND hWnd = *reinterpret_cast<HWND*>(ctx.esi + 0x168);
+                    if (ctx.esi) {
+                        // Check if windowed mode
+                        if (*reinterpret_cast<int*>(ctx.esi + 0x130) == 1) {
+                            // Get HWND
+                            HWND hWnd = *reinterpret_cast<HWND*>(ctx.esi + 0x168);
 
-                        // Get styles
-                        LONG lStyle = GetWindowLongW(hWnd, GWL_STYLE);
-                        LONG lExStyle = GetWindowLongW(hWnd, GWL_EXSTYLE);
+                            // Get styles
+                            LONG lStyle = GetWindowLongW(hWnd, GWL_STYLE);
+                            LONG lExStyle = GetWindowLongW(hWnd, GWL_EXSTYLE);
 
-                        // Apply borderless style
-                        lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
-                        lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
-                        SetWindowLongW(hWnd, GWL_STYLE, lStyle);
-                        SetWindowLongW(hWnd, GWL_EXSTYLE, lExStyle);
+                            // Apply borderless style
+                            lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+                            lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+                            SetWindowLongW(hWnd, GWL_STYLE, lStyle);
+                            SetWindowLongW(hWnd, GWL_EXSTYLE, lExStyle);
+
+                            // Set window on top
+                            SetWindowPos(hWnd, HWND_TOP, 0, 0, DesktopDimensions.first, DesktopDimensions.second, SWP_FRAMECHANGED | SWP_NOACTIVATE);
+                            spdlog::info("DA1: Borderless: Applied borderless style.");
+                        }
                     }
                 });
         }
         else {
-            spdlog::error("DA1: Borderless: SetWindowLongW: Pattern scan failed.");
+            spdlog::error("DA1: Borderless: Pattern scan failed.");
+        }
+    }
+
+    if (eGameType == Game::DA2 && bBorderlessWindowed) {
+        // DA2: Borderless Windowed
+        std::uint8_t* DA2_BorderlessScanResult = Memory::PatternScan(exeModule, "8B ?? ?? 52 FF ?? 8B ?? ?? ?? ?? ?? 8B ?? 8A ??");
+        if (DA2_BorderlessScanResult) {
+            spdlog::info("DA2: Borderless: Address is {:s}+{:x}", sExeName.c_str(), DA2_BorderlessScanResult - (std::uint8_t*)exeModule);
+            static SafetyHookMid DA2_BorderlessMidHook{};
+            DA2_BorderlessMidHook = safetyhook::create_mid(DA2_BorderlessScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (ctx.esi) {
+                        // Check if windowed mode
+                        if (*reinterpret_cast<BYTE*>(ctx.esi + 0x69) == 0) {
+                            // Get HWND
+                            HWND hWnd = *reinterpret_cast<HWND*>(ctx.esi + 0x48);
+
+                            // Get styles
+                            LONG lStyle = GetWindowLongW(hWnd, GWL_STYLE);
+                            LONG lExStyle = GetWindowLongW(hWnd, GWL_EXSTYLE);
+
+                            // Apply borderless style
+                            lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+                            lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+                            SetWindowLongW(hWnd, GWL_STYLE, lStyle);
+                            SetWindowLongW(hWnd, GWL_EXSTYLE, lExStyle);
+
+                            // Set window on top
+                            SetWindowPos(hWnd, HWND_TOP, 0, 0, DesktopDimensions.first, DesktopDimensions.second, SWP_FRAMECHANGED | SWP_NOACTIVATE);
+                            spdlog::info("DA2: Borderless: Applied borderless style.");
+                        }
+                    }
+                });
+        }
+        else {
+            spdlog::error("DA2: Borderless: Pattern scan failed.");
         }
     }
 }
