@@ -467,16 +467,16 @@ void Graphics()
         }     
     }
 
-    if (eGameType == Game::DA1 && iShadowResolution != 1024) {
-        // DA1: Shadow Resolution
-        std::uint8_t* DA1_ShadowResolutionScanResult = Memory::PatternScan(exeModule, "C7 ?? ?? ?? ?? ?? 00 04 00 00 56 57 E8 ?? ?? ?? ??");
-        if (DA1_ShadowResolutionScanResult) {
-            spdlog::info("DA1: Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), DA1_ShadowResolutionScanResult - (std::uint8_t*)exeModule);
-            Memory::Write(DA1_ShadowResolutionScanResult + 0x6, iShadowResolution);      // Default very high = 1024
-            spdlog::info("DA1: Graphics: Shadow Resolution: Patched instruction.");
+    if (eGameType == Game::DA1 || eGameType == Game::DA2) {
+        // DA1/DA2: Shadow Resolution
+        std::uint8_t* DA1_DA2_ShadowResolutionScanResult = Memory::MultiPatternScan(exeModule, { "C7 ?? ?? ?? ?? ?? 00 04 00 00 56 57 E8 ?? ?? ?? ??", "C7 ?? ?? ?? ?? ?? 00 10 00 00 E8 ?? ?? ?? ?? 8B ?? 8B ?? 8B ?? ?? FF ??" });
+        if (DA1_DA2_ShadowResolutionScanResult) {
+            spdlog::info("DA1/DA2: Graphics: Shadow Resolution: Address is {:s}+{:x}", sExeName.c_str(), DA1_DA2_ShadowResolutionScanResult - (std::uint8_t*)exeModule);
+            Memory::Write(DA1_DA2_ShadowResolutionScanResult + 0x6, iShadowResolution);
+            spdlog::info("DA1/DA2: Graphics: Shadow Resolution: Patched instruction.");
         }
         else {
-            spdlog::error("DA1: Graphics: Shadow Resolution: Pattern scan failed.");
+            spdlog::error("DA1/DA2: Graphics: Shadow Resolution: Pattern scan failed.");
         }
     }
 }
