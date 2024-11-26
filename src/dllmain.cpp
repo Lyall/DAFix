@@ -13,7 +13,7 @@ HMODULE thisModule;
 
 // Fix details
 std::string sFixName = "DAFix";
-std::string sFixVersion = "0.0.1";
+std::string sFixVersion = "0.0.2";
 std::filesystem::path sFixPath;
 
 // Ini
